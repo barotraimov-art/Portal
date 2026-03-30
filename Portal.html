@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>KIBER-PORTAL: SECURE CHAT</title>
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+    <style>
+        body { background: #000; color: #00FF41; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #app-container { border: 2px solid #00FF41; width: 450px; padding: 20px; background: rgba(0, 10, 0, 0.9); box-shadow: 0 0 15px #00FF41; }
+        .hidden { display: none; }
+        input { background: black; border: 1px solid #00FF41; color: #00FF41; padding: 10px; width: 90%; margin-top: 10px; outline: none; }
+        #chat-box { height: 300px; border: 1px solid #00FF41; margin-top: 10px; overflow-y: auto; padding: 10px; font-size: 14px; }
+        .msg { margin-bottom: 5px; }
+        .my-msg { color: #fff; }
+        button { background: #00FF41; color: black; border: none; padding: 10px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="lock-screen">
+        <h3>[ ACCESS RESTRICTED ]</h3>
+        <p>Kodni kiriting:</p>
+        <input type="text" id="entry-code" placeholder="Kalit so'z...">
+        <button onclick="checkEntryCode()">SYSTEM ENTRY</button>
+    </div>
+
+    <div id="chat-screen" class="hidden">
+        <h3>[ ENCRYPTED CHANNEL ]</h3>
+        <p id="my-id-display" style="font-size: 10px; opacity: 0.6;">Sizning ID: yuklanmoqda...</p>
+        <input type="text" id="peer-id-input" placeholder="Do'stingiz ID raqamini kiriting...">
+        <button onclick="connectToPeer()">ULANISH</button>
+        
+        <div id="chat-box"></div>
+        
+        <input type="text" id="message-input" placeholder="Xabar yozing...">
+        <button onclick="sendMessage()">YUBORISH</button>
+    </div>
+</div>
+
+<script>
+    const ENTRY_PASS = "olma"; // Siz aytgan maxfiy kod
+    let peer, conn;
+
+    function checkEntryCode() {
+        const code = document.getElementById('entry-code').value;
+        if(code === ENTRY_PASS) {
+            document.getElementById('lock-screen').classList.add('hidden');
+            document.getElementById('chat-screen').classList.remove('hidden');
+            initPeer();
+        } else {
+            alert("XATO KOD! Tizim bloklandi.");
+        }
+    }
+
+    function initPeer() {
+        // PeerJS serveriga ulanish
+        peer = new Peer(); 
+        
+        peer.on('open', (id) => {
+            document.getElementById('my-id-display').innerText = "Sizning ID: " + id;
+        });
+
+        // Kiruvchi ulanishni qabul qilish
+        peer.on('connection', (c) => {
+            conn = c;
+            setupChat();
+        });
+    }
+
+    function connectToPeer() {
+        const peerId = document.getElementById('peer-id-input').value;
+        conn = peer.connect(peerId);
+        setupChat();
+    }
+
+    function setupChat() {
+        conn.on('data', (data) => {
+            appendMessage("Hamkor: " + data, 'peer-msg');
+        });
+        appendMessage("Tizim: Aloqa o'rnatildi!", 'status');
+    }
+
+    function sendMessage() {
+        const msg = document.getElementById('message-input').value;
+        if(conn && msg) {
+            conn.send(msg);
+            appendMessage("Siz: " + msg, 'my-msg');
+            document.getElementById('message-input').value = "";
+        }
+    }
+
+    function appendMessage(text, type) {
+        const box = document.getElementById('chat-box');
+        const div = document.createElement('div');
+        div.className = "msg " + type;
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+</script>
+</body>
+</html>
